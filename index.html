@@ -58,6 +58,11 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
   </nav>
 
   <section id="dashboard" class="panel active">
+    <div class="card" style="margin-bottom:14px">
+  <div class="label">💰 我的總資產</div>
+  <div class="value income" id="totalAssets">$0</div>
+  <div class="muted">現金＋銀行＋投資帳戶</div>
+</div>
     <div class="grid">
       <div class="card kpi"><div class="label">本月收入</div><div id="kpiIncome" class="value income">$0</div></div>
       <div class="card kpi"><div class="label">本月支出</div><div id="kpiExpense" class="value expense">$0</div></div>
@@ -220,6 +225,11 @@ $('recordForm').addEventListener('submit',e=>{e.preventDefault();const obj={id:$
 function editRecord(x){openRecordModal(data.records.find(r=>r.id===x))}function deleteRecord(x){if(confirm('確定要刪除這筆紀錄嗎？')){data.records=data.records.filter(r=>r.id!==x);save();toast('已刪除')}}
 
 function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId===a.id).reduce((s,r)=>s+(r.type==='income'?r.amount:-r.amount),0)}
+  function renderTotalAssets(){
+  const total = data.accounts.reduce((sum, a) => sum + accountBalance(a), 0);
+  const el = $('totalAssets');
+  if(el) el.textContent = money(total);
+}
 function renderAccounts(){$('accountList').innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="account"><span class="pill">${a.type}</span><strong>${escapeHtml(a.name)}</strong><div class="mini">目前餘額</div><div style="font-size:24px;font-weight:800;margin:6px 0">${money(accountBalance(a))}</div><button class="btn danger" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join(''):'<div class="empty">尚未建立帳戶</div>'}
 function openAccountModal(){$('accountForm').reset();openModal('accountModal')}$('accountForm').addEventListener('submit',e=>{e.preventDefault();data.accounts.push({id:id(),name:$('accountName').value.trim(),type:$('accountType').value,opening:Number($('accountOpening').value)||0});save();closeModal('accountModal');toast('帳戶已新增')});
 function deleteAccount(x){if(data.accounts.length<=1)return alert('至少要保留一個帳戶。');if(data.records.some(r=>r.accountId===x))return alert('這個帳戶已經有記帳紀錄，請先修改相關紀錄後再刪除。');if(confirm('刪除這個帳戶？')){data.accounts=data.accounts.filter(a=>a.id!==x);save()}}
@@ -252,7 +262,7 @@ const tip = $('installTip');
 if (tip && !window.matchMedia('(display-mode: standalone)').matches) {
   tip.style.display = 'block';
 }
-
+renderTotalAssets();
 </script>
 </body>
 </html>
