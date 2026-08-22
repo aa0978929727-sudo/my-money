@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#67b8f1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="我的小金庫" />
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./icons/icon-192.png" />
+<title>我的小金庫</title>
+<style>
+:root{
+  --bg:#eef7ff; --card:#ffffff; --ink:#17324d; --muted:#6b8299; --line:#dbeaf7;
+  --primary:#4c9fe8; --primary2:#78c5f6; --danger:#e76e78; --ok:#3aa67e; --warn:#e6a23c;
+  --shadow:0 10px 30px rgba(53,104,146,.12); --radius:20px;
+}
+*{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei",sans-serif;color:var(--ink);background:linear-gradient(180deg,#dff3ff 0,#f7fbff 38%,#eef7ff 100%);min-height:100vh}
+button,input,select,textarea{font:inherit} button{cursor:pointer}
+.app{max-width:1180px;margin:auto;padding:20px 16px 100px}
+.hero{background:linear-gradient(135deg,#67b8f1,#9edcff);color:white;border-radius:28px;padding:24px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.hero:after{content:"☁️";font-size:72px;position:absolute;right:18px;top:6px;opacity:.28}.hero h1{margin:0 0 6px;font-size:30px}.hero p{margin:0;opacity:.93}
+.topnav{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:16px 0}.tab{border:0;background:rgba(255,255,255,.88);padding:12px;border-radius:16px;color:var(--ink);box-shadow:0 4px 14px rgba(45,97,138,.08)}.tab.active{background:var(--primary);color:white}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}.card{background:rgba(255,255,255,.94);border:1px solid rgba(219,234,247,.9);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.kpi{grid-column:span 4}.kpi .label{font-size:13px;color:var(--muted)}.kpi .value{font-size:28px;font-weight:800;margin-top:7px}.income{color:var(--ok)}.expense{color:var(--danger)}
+.panel{display:none}.panel.active{display:block}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:20px 0 10px}.section-title h2{font-size:20px;margin:0}
+.btn{border:0;border-radius:14px;padding:10px 14px;background:var(--primary);color:white;font-weight:700}.btn.secondary{background:#e8f4fe;color:#2f76ad}.btn.danger{background:#fff0f1;color:#c74c58}.btn.ghost{background:white;color:var(--ink);border:1px solid var(--line)}
+.form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:13px;color:var(--muted)}.field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:white;color:var(--ink)}.field textarea{min-height:74px;resize:vertical}.span2{grid-column:span 2}.span4{grid-column:span 4}
+.table-wrap{overflow:auto;border-radius:16px;border:1px solid var(--line)}table{width:100%;border-collapse:collapse;background:white;min-width:760px}th,td{padding:12px 10px;border-bottom:1px solid #edf4fa;text-align:left;font-size:14px}th{position:sticky;top:0;background:#f7fbff;color:#56738e}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#eef6fd;color:#3f6f97;font-size:12px}.pill.in{background:#eaf8f2;color:#2f8a69}.pill.out{background:#fff0f1;color:#be515c}
+.progress{height:10px;background:#eaf2f8;border-radius:99px;overflow:hidden}.progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--primary),var(--primary2));border-radius:99px}.budget-item{display:grid;grid-template-columns:160px 1fr 130px;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #edf4fa}
+.chart{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:12px}.bar-wrap{flex:1;text-align:center;font-size:11px;color:var(--muted)}.bar{width:100%;max-width:38px;margin:auto;background:linear-gradient(180deg,#74c5f7,#4c9fe8);border-radius:8px 8px 3px 3px;min-height:2px}.bar.exp{background:linear-gradient(180deg,#f1a5ad,#e76e78)}
+.empty{text-align:center;color:var(--muted);padding:28px}.mini{font-size:12px;color:var(--muted)}.account-list{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.account{padding:16px;border:1px solid var(--line);border-radius:16px;background:#fbfdff}.account strong{display:block;font-size:18px;margin-top:5px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.filters input,.filters select{padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:white}
+.modal{position:fixed;inset:0;background:rgba(18,40,61,.42);display:none;align-items:center;justify-content:center;padding:16px;z-index:20}.modal.show{display:flex}.modal-card{background:white;width:min(760px,100%);max-height:92vh;overflow:auto;border-radius:24px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.22)}
+.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#17324d;color:#fff;padding:11px 16px;border-radius:999px;display:none;z-index:50}.toast.show{display:block}
+.note{padding:12px 14px;background:#f6fbff;border-left:4px solid var(--primary);border-radius:12px;color:#4d6d88;font-size:13px}
+.install-tip{display:none;margin:14px 0 0;background:rgba(255,255,255,.2);padding:10px 12px;border-radius:14px;font-size:13px}
+@media(display-mode:standalone){.install-tip{display:none!important}}
+@media(max-width:800px){.topnav{grid-template-columns:repeat(3,1fr)}.kpi{grid-column:span 12}.form-grid{grid-template-columns:1fr}.span2,.span4{grid-column:span 1}.account-list{grid-template-columns:1fr}.budget-item{grid-template-columns:1fr}.app{padding:calc(12px + env(safe-area-inset-top)) 10px calc(100px + env(safe-area-inset-bottom))}.hero h1{font-size:26px}.card{padding:14px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="hero">
+    <h1>☁️ 我的小金庫</h1>
+    <p>把每一筆錢放回它該在的位置，慢慢把生活變得更安心。</p>
+    <div id="installTip" class="install-tip">📱 iPhone：用 Safari 開啟後，點「分享」→「加入主畫面」，就會像 App 一樣使用。</div>
+  </section>
+
+  <nav class="topnav">
+    <button class="tab active" data-tab="dashboard">總覽</button>
+    <button class="tab" data-tab="records">記帳</button>
+    <button class="tab" data-tab="accounts">帳戶</button>
+    <button class="tab" data-tab="budgets">預算</button>
+    <button class="tab" data-tab="recurring">固定支出</button>
+    <button class="tab" data-tab="backup">備份</button>
+  </nav>
+
+  <section id="dashboard" class="panel active">
+    <div class="grid">
+      <div class="card kpi"><div class="label">本月收入</div><div id="kpiIncome" class="value income">$0</div></div>
+      <div class="card kpi"><div class="label">本月支出</div><div id="kpiExpense" class="value expense">$0</div></div>
+      <div class="card kpi"><div class="label">本月結餘</div><div id="kpiBalance" class="value">$0</div></div>
+    </div>
+    <div class="grid" style="margin-top:14px">
+      <div class="card" style="grid-column:span 7">
+        <div class="section-title"><h2>近 6 個月收支</h2></div><div id="monthChart" class="chart"></div>
+      </div>
+      <div class="card" style="grid-column:span 5">
+        <div class="section-title"><h2>本月支出分類</h2></div><div id="categorySummary"></div>
+      </div>
+    </div>
+    <div class="section-title"><h2>最近紀錄</h2><button class="btn" onclick="openRecordModal()">＋ 新增一筆</button></div>
+    <div class="card"><div id="recentRecords"></div></div>
+  </section>
+
+  <section id="records" class="panel">
+    <div class="section-title"><h2>所有記帳紀錄</h2><button class="btn" onclick="openRecordModal()">＋ 新增一筆</button></div>
+    <div class="card">
+      <div class="filters">
+        <input id="searchText" placeholder="搜尋名稱／備註" oninput="renderRecords()" />
+        <select id="filterType" onchange="renderRecords()"><option value="">全部類型</option><option value="expense">支出</option><option value="income">收入</option></select>
+        <select id="filterCategory" onchange="renderRecords()"><option value="">全部分類</option></select>
+        <input type="month" id="filterMonth" onchange="renderRecords()" />
+        <button class="btn secondary" onclick="clearFilters()">清除</button>
+      </div>
+      <div id="recordsTable"></div>
+    </div>
+  </section>
+
+  <section id="accounts" class="panel">
+    <div class="section-title"><h2>帳戶與卡片</h2><button class="btn" onclick="openAccountModal()">＋ 新增帳戶</button></div>
+    <div class="card"><div class="note">帳戶餘額 = 你設定的期初餘額 ＋ 收入 − 支出。新增記帳時可指定從哪個帳戶進出。</div><div id="accountList" class="account-list" style="margin-top:14px"></div></div>
+  </section>
+
+  <section id="budgets" class="panel">
+    <div class="section-title"><h2>每月預算</h2><button class="btn" onclick="openBudgetModal()">＋ 設定預算</button></div>
+    <div class="card"><div id="budgetList"></div></div>
+  </section>
+
+  <section id="recurring" class="panel">
+    <div class="section-title"><h2>固定支出</h2><button class="btn" onclick="openRecurringModal()">＋ 新增固定支出</button></div>
+    <div class="card"><div class="note">這裡用來記保險、學貸、訂閱、房租等固定項目。按「本月入帳」就會自動新增一筆支出紀錄。</div><div id="recurringList" style="margin-top:14px"></div></div>
+  </section>
+
+  <section id="backup" class="panel">
+    <div class="section-title"><h2>備份與匯出</h2></div>
+    <div class="card">
+      <div class="form-grid">
+        <div class="field span2"><label>完整資料備份</label><button class="btn" onclick="exportJSON()">下載 JSON 備份</button></div>
+        <div class="field span2"><label>交易紀錄匯出</label><button class="btn secondary" onclick="exportCSV()">下載 CSV</button></div>
+        <div class="field span4"><label>還原 JSON 備份</label><input type="file" id="restoreFile" accept="application/json" onchange="restoreJSON(event)" /></div>
+      </div>
+      <p class="mini">資料預設只保存在這台裝置的瀏覽器中。清除瀏覽器網站資料前，記得先下載 JSON 備份。</p>
+    </div>
+  </section>
+</div>
+
+<div id="recordModal" class="modal"><div class="modal-card">
+  <div class="section-title"><h2 id="recordModalTitle">新增記帳</h2><button class="btn ghost" onclick="closeModal('recordModal')">關閉</button></div>
+  <form id="recordForm" class="form-grid">
+    <input type="hidden" id="recordId" />
+    <div class="field"><label>類型</label><select id="recordType"><option value="expense">支出</option><option value="income">收入</option></select></div>
+    <div class="field"><label>日期</label><input type="date" id="recordDate" required /></div>
+    <div class="field"><label>金額</label><input type="number" id="recordAmount" min="0" step="1" required placeholder="例如 120" /></div>
+    <div class="field"><label>分類</label><select id="recordCategory"></select></div>
+    <div class="field span2"><label>名稱</label><input id="recordName" required placeholder="例如 午餐、薪水、保險" /></div>
+    <div class="field span2"><label>帳戶</label><select id="recordAccount"></select></div>
+    <div class="field span4"><label>備註</label><textarea id="recordNote" placeholder="可留空"></textarea></div>
+    <div class="field span4"><button class="btn" type="submit">儲存</button></div>
+  </form>
+</div></div>
+
+<div id="accountModal" class="modal"><div class="modal-card">
+  <div class="section-title"><h2>新增帳戶</h2><button class="btn ghost" onclick="closeModal('accountModal')">關閉</button></div>
+  <form id="accountForm" class="form-grid">
+    <div class="field span2"><label>帳戶名稱</label><input id="accountName" required placeholder="例如 國泰活存" /></div>
+    <div class="field"><label>類型</label><select id="accountType"><option>銀行</option><option>現金</option><option>信用卡</option><option>投資</option><option>其他</option></select></div>
+    <div class="field"><label>期初餘額</label><input type="number" id="accountOpening" value="0" /></div>
+    <div class="field span4"><button class="btn" type="submit">新增</button></div>
+  </form>
+</div></div>
+
+<div id="budgetModal" class="modal"><div class="modal-card">
+  <div class="section-title"><h2>設定每月預算</h2><button class="btn ghost" onclick="closeModal('budgetModal')">關閉</button></div>
+  <form id="budgetForm" class="form-grid">
+    <div class="field span2"><label>支出分類</label><select id="budgetCategory"></select></div>
+    <div class="field span2"><label>每月上限</label><input type="number" id="budgetAmount" min="0" required /></div>
+    <div class="field span4"><button class="btn" type="submit">儲存</button></div>
+  </form>
+</div></div>
+
+<div id="recurringModal" class="modal"><div class="modal-card">
+  <div class="section-title"><h2>新增固定支出</h2><button class="btn ghost" onclick="closeModal('recurringModal')">關閉</button></div>
+  <form id="recurringForm" class="form-grid">
+    <div class="field span2"><label>名稱</label><input id="recurringName" required placeholder="例如 學貸" /></div>
+    <div class="field"><label>金額</label><input type="number" id="recurringAmount" min="0" required /></div>
+    <div class="field"><label>每月日期</label><input type="number" id="recurringDay" min="1" max="31" value="1" required /></div>
+    <div class="field span2"><label>分類</label><select id="recurringCategory"></select></div>
+    <div class="field span2"><label>帳戶</label><select id="recurringAccount"></select></div>
+    <div class="field span4"><button class="btn" type="submit">新增</button></div>
+  </form>
+</div></div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+const EXPENSE_CATS=['餐飲','交通','購物','娛樂','寵物','生活用品','保險','學貸','醫療','房租/居住','訂閱','人情/送禮','旅遊','其他'];
+const INCOME_CATS=['薪資','兼職','獎金','投資','退款','其他收入'];
+const KEY='my_money_app_v1';
+let data=loadData();
+
+function loadData(){
+  try{const x=JSON.parse(localStorage.getItem(KEY)); if(x) return x;}catch(e){}
+  return {records:[],accounts:[{id:id(),name:'現金',type:'現金',opening:0}],budgets:{},recurring:[]};
+}
+function save(){localStorage.setItem(KEY,JSON.stringify(data)); renderAll();}
+function id(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function money(n){return new Intl.NumberFormat('zh-TW',{style:'currency',currency:'TWD',maximumFractionDigits:0}).format(Number(n)||0)}
+function today(){return new Date().toISOString().slice(0,10)}
+function monthKey(d=new Date()){return typeof d==='string'?d.slice(0,7):`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function closeModal(x){document.getElementById(x).classList.remove('show')}
+function openModal(x){document.getElementById(x).classList.add('show')}
+
+function categoriesFor(type){return type==='income'?INCOME_CATS:EXPENSE_CATS}
+function fillCategories(selectId,type='expense',includeAll=false){const s=document.getElementById(selectId); if(!s)return; const arr=categoriesFor(type); s.innerHTML=(includeAll?'<option value="">全部分類</option>':'')+arr.map(c=>`<option value="${c}">${c}</option>`).join('')}
+function fillAccounts(selectId){const s=document.getElementById(selectId);if(!s)return;s.innerHTML=data.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
+
+function renderAll(){renderDashboard();renderRecords();renderAccounts();renderBudgets();renderRecurring();fillAccounts('recordAccount');fillAccounts('recurringAccount');fillCategories('filterCategory','expense',true)}
+
+function renderDashboard(){
+  const mk=monthKey(); const r=data.records.filter(x=>x.date.startsWith(mk));
+  const inc=r.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0); const exp=r.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);
+  $('kpiIncome').textContent=money(inc);$('kpiExpense').textContent=money(exp);$('kpiBalance').textContent=money(inc-exp);$('kpiBalance').className='value '+(inc-exp>=0?'income':'expense');
+  const recent=[...data.records].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8); $('recentRecords').innerHTML=tableHTML(recent,false);
+  const cats={};r.filter(x=>x.type==='expense').forEach(x=>cats[x.category]=(cats[x.category]||0)+x.amount);const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  $('categorySummary').innerHTML=sorted.length?sorted.map(([c,v])=>`<div class="budget-item"><strong>${c}</strong><div class="progress"><i style="width:${Math.min(100,exp?v/exp*100:0)}%"></i></div><span>${money(v)}</span></div>`).join(''):'<div class="empty">本月還沒有支出紀錄 🌤️</div>';
+  renderMonthChart();
+}
+function renderMonthChart(){
+  const months=[]; const now=new Date(); for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(monthKey(d))}
+  const vals=months.map(m=>{const rr=data.records.filter(x=>x.date.startsWith(m));return {m,inc:rr.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0),exp:rr.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0)}});
+  const max=Math.max(1,...vals.flatMap(v=>[v.inc,v.exp]));
+  $('monthChart').innerHTML=vals.map(v=>`<div class="bar-wrap"><div style="display:flex;align-items:flex-end;justify-content:center;gap:3px;height:140px"><div title="收入 ${money(v.inc)}" class="bar" style="height:${v.inc/max*130}px"></div><div title="支出 ${money(v.exp)}" class="bar exp" style="height:${v.exp/max*130}px"></div></div><div>${v.m.slice(5)}月</div></div>`).join('');
+}
+
+function tableHTML(rows,actions=true){if(!rows.length)return '<div class="empty">目前沒有紀錄。</div>';return `<div class="table-wrap"><table><thead><tr><th>日期</th><th>類型</th><th>名稱</th><th>分類</th><th>帳戶</th><th>金額</th>${actions?'<th>操作</th>':''}</tr></thead><tbody>${rows.map(r=>{const a=data.accounts.find(x=>x.id===r.accountId);return `<tr><td>${r.date}</td><td><span class="pill ${r.type==='income'?'in':'out'}">${r.type==='income'?'收入':'支出'}</span></td><td>${escapeHtml(r.name)}${r.note?`<div class="mini">${escapeHtml(r.note)}</div>`:''}</td><td>${r.category}</td><td>${a?a.name:'—'}</td><td class="${r.type==='income'?'income':'expense'}">${r.type==='income'?'+':'-'}${money(r.amount)}</td>${actions?`<td><button class="btn secondary" onclick="editRecord('${r.id}')">編輯</button> <button class="btn danger" onclick="deleteRecord('${r.id}')">刪除</button></td>`:''}</tr>`}).join('')}</tbody></table></div>`}
+function renderRecords(){
+  if(!document.getElementById('recordsTable'))return; let rows=[...data.records].sort((a,b)=>b.date.localeCompare(a.date));const q=($('searchText').value||'').trim().toLowerCase();const t=$('filterType').value;const c=$('filterCategory').value;const m=$('filterMonth').value;
+  if(q)rows=rows.filter(r=>(r.name+' '+(r.note||'')).toLowerCase().includes(q));if(t)rows=rows.filter(r=>r.type===t);if(c)rows=rows.filter(r=>r.category===c);if(m)rows=rows.filter(r=>r.date.startsWith(m));$('recordsTable').innerHTML=tableHTML(rows,true)
+}
+function clearFilters(){$('searchText').value='';$('filterType').value='';$('filterCategory').value='';$('filterMonth').value='';renderRecords()}
+function openRecordModal(rec=null){$('recordForm').reset();$('recordId').value=rec?.id||'';$('recordType').value=rec?.type||'expense';$('recordDate').value=rec?.date||today();fillCategories('recordCategory',$('recordType').value);$('recordCategory').value=rec?.category||$('recordCategory').value;fillAccounts('recordAccount');if(rec?.accountId)$('recordAccount').value=rec.accountId;$('recordAmount').value=rec?.amount||'';$('recordName').value=rec?.name||'';$('recordNote').value=rec?.note||'';$('recordModalTitle').textContent=rec?'編輯記帳':'新增記帳';openModal('recordModal')}
+$('recordType').addEventListener('change',()=>fillCategories('recordCategory',$('recordType').value));
+$('recordForm').addEventListener('submit',e=>{e.preventDefault();const obj={id:$('recordId').value||id(),type:$('recordType').value,date:$('recordDate').value,amount:Number($('recordAmount').value),category:$('recordCategory').value,name:$('recordName').value.trim(),accountId:$('recordAccount').value,note:$('recordNote').value.trim()};const idx=data.records.findIndex(x=>x.id===obj.id);if(idx>=0)data.records[idx]=obj;else data.records.push(obj);save();closeModal('recordModal');toast('已儲存 ✨')});
+function editRecord(x){openRecordModal(data.records.find(r=>r.id===x))}function deleteRecord(x){if(confirm('確定要刪除這筆紀錄嗎？')){data.records=data.records.filter(r=>r.id!==x);save();toast('已刪除')}}
+
+function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId===a.id).reduce((s,r)=>s+(r.type==='income'?r.amount:-r.amount),0)}
+function renderAccounts(){$('accountList').innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="account"><span class="pill">${a.type}</span><strong>${escapeHtml(a.name)}</strong><div class="mini">目前餘額</div><div style="font-size:24px;font-weight:800;margin:6px 0">${money(accountBalance(a))}</div><button class="btn danger" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join(''):'<div class="empty">尚未建立帳戶</div>'}
+function openAccountModal(){$('accountForm').reset();openModal('accountModal')}$('accountForm').addEventListener('submit',e=>{e.preventDefault();data.accounts.push({id:id(),name:$('accountName').value.trim(),type:$('accountType').value,opening:Number($('accountOpening').value)||0});save();closeModal('accountModal');toast('帳戶已新增')});
+function deleteAccount(x){if(data.accounts.length<=1)return alert('至少要保留一個帳戶。');if(data.records.some(r=>r.accountId===x))return alert('這個帳戶已經有記帳紀錄，請先修改相關紀錄後再刪除。');if(confirm('刪除這個帳戶？')){data.accounts=data.accounts.filter(a=>a.id!==x);save()}}
+
+function openBudgetModal(){fillCategories('budgetCategory','expense');$('budgetForm').reset();openModal('budgetModal')}$('budgetForm').addEventListener('submit',e=>{e.preventDefault();data.budgets[$('budgetCategory').value]=Number($('budgetAmount').value)||0;save();closeModal('budgetModal');toast('預算已更新')});
+function renderBudgets(){const m=monthKey();const entries=Object.entries(data.budgets);$('budgetList').innerHTML=entries.length?entries.map(([c,b])=>{const spent=data.records.filter(r=>r.type==='expense'&&r.category===c&&r.date.startsWith(m)).reduce((s,r)=>s+r.amount,0);const pct=b?spent/b*100:0;return `<div class="budget-item"><strong>${c}</strong><div><div class="progress"><i style="width:${Math.min(100,pct)}%"></i></div><div class="mini">已用 ${pct.toFixed(0)}%</div></div><span>${money(spent)} / ${money(b)} <button class="btn danger" onclick="removeBudget('${c}')">刪除</button></span></div>`}).join(''):'<div class="empty">還沒有設定預算。</div>'}
+function removeBudget(c){delete data.budgets[c];save()}
+
+function openRecurringModal(){$('recurringForm').reset();fillCategories('recurringCategory','expense');fillAccounts('recurringAccount');openModal('recurringModal')}$('recurringForm').addEventListener('submit',e=>{e.preventDefault();data.recurring.push({id:id(),name:$('recurringName').value.trim(),amount:Number($('recurringAmount').value),day:Number($('recurringDay').value),category:$('recurringCategory').value,accountId:$('recurringAccount').value});save();closeModal('recurringModal');toast('固定支出已新增')});
+function renderRecurring(){$('recurringList').innerHTML=data.recurring.length?`<div class="table-wrap"><table><thead><tr><th>名稱</th><th>金額</th><th>每月</th><th>分類</th><th>操作</th></tr></thead><tbody>${data.recurring.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td>${money(r.amount)}</td><td>${r.day} 日</td><td>${r.category}</td><td><button class="btn secondary" onclick="postRecurring('${r.id}')">本月入帳</button> <button class="btn danger" onclick="removeRecurring('${r.id}')">刪除</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">目前沒有固定支出。</div>'}
+function postRecurring(x){const r=data.recurring.find(a=>a.id===x);const now=new Date();const d=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(Math.min(r.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())).padStart(2,'0')}`;const dup=data.records.some(a=>a.recurringId===x&&a.date.startsWith(monthKey()));if(dup&&!confirm('這個固定支出本月看起來已入帳，仍要再新增一次嗎？'))return;data.records.push({id:id(),type:'expense',date:d,amount:r.amount,category:r.category,name:r.name,accountId:r.accountId,note:'固定支出',recurringId:x});save();toast('已加入本月支出')}
+function removeRecurring(x){data.recurring=data.recurring.filter(r=>r.id!==x);save()}
+
+function exportJSON(){download(`我的小金庫_備份_${today()}.json`,JSON.stringify(data,null,2),'application/json')}
+function exportCSV(){const head=['日期','類型','名稱','分類','帳戶','金額','備註'];const rows=data.records.map(r=>[r.date,r.type==='income'?'收入':'支出',r.name,r.category,data.accounts.find(a=>a.id===r.accountId)?.name||'',r.amount,r.note||'']);const csv='\uFEFF'+[head,...rows].map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');download(`我的小金庫_交易_${today()}.csv`,csv,'text/csv;charset=utf-8')}
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function restoreJSON(e){const f=e.target.files[0];if(!f)return;const fr=new FileReader();fr.onload=()=>{try{const x=JSON.parse(fr.result);if(!x.records||!x.accounts)throw 0;if(confirm('還原會覆蓋目前資料，確定嗎？')){data=x;save();toast('備份已還原')}}catch(err){alert('這不是有效的備份檔。')}};fr.readAsText(f)}
+function escapeHtml(s=''){return String(s).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.getElementById(b.dataset.tab).classList.add('active')}));
+document.querySelectorAll('.modal').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show')}));
+fillCategories('recordCategory','expense');fillCategories('budgetCategory','expense');fillCategories('recurringCategory','expense');fillCategories('filterCategory','expense',true);renderAll();
+
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+const tip = $('installTip');
+if (tip && !window.matchMedia('(display-mode: standalone)').matches) {
+  tip.style.display = 'block';
+}
+
+</script>
+</body>
+</html>
