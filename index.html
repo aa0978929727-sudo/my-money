@@ -41,6 +41,29 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
 </style>
 </head>
 <body>
+  <div id="lockScreen" style="position:fixed;inset:0;z-index:99999;background:#eef7ff;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="background:white;width:100%;max-width:420px;padding:32px 24px;border-radius:28px;text-align:center;box-shadow:0 10px 30px rgba(53,104,146,.12);">
+    <div style="font-size:48px;">🔐</div>
+    <h2 style="color:#17324d;">錢錢快快長大 💕</h2>
+    <p style="color:#7895ae;">請輸入 PIN 解鎖小金庫</p>
+
+    <input id="pinInput"
+           type="password"
+           inputmode="numeric"
+           maxlength="6"
+           placeholder="輸入 PIN"
+           style="width:100%;padding:16px;text-align:center;font-size:22px;border:2px solid #d5e8f7;border-radius:16px;">
+
+    <button id="unlockBtn"
+            style="width:100%;margin-top:16px;padding:16px;border:0;border-radius:16px;background:#4c9fe8;color:white;font-weight:bold;font-size:18px;">
+      解鎖 🔓
+    </button>
+
+    <div id="pinError" style="color:#e66773;margin-top:12px;display:none;">
+      PIN 錯誤，請再試一次
+    </div>
+  </div>
+</div>
 <div class="app">
   <section class="hero">
     <h1>☁️ 錢錢快快長大 💕</h1>
@@ -262,7 +285,107 @@ const tip = $('installTip');
 if (tip && !window.matchMedia('(display-mode: standalone)').matches) {
   tip.style.display = 'block';
 }
-renderTotalAssets();
+async function derivePinHash(pin, saltBase64){
+  const salt = Uint8Array.from(atob(saltBase64), c => c.charCodeAt(0));
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(pin),
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  );
+
+  const bits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt,
+      iterations: 120000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  );
+
+  return Array.from(new Uint8Array(bits))
+    .map(b => b.toString(16).padStart(2,'0'))
+    .join('');
+}
+
+function makeSalt(){
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...salt));
+}
+
+const lockScreen = $('lockScreen');
+const pinInput = $('pinInput');
+const unlockBtn = $('unlockBtn');
+const pinError = $('pinError');
+
+let firstPin = null;
+
+async function unlockVault(){
+  const pin = pinInput.value.trim();
+
+  if(!/^\d{4,6}$/.test(pin)){
+    pinError.textContent = '請輸入 4～6 位數字 PIN';
+    pinError.style.display = 'block';
+    return;
+  }
+
+  const savedHash = localStorage.getItem('moneyAppPinHash');
+  const savedSalt = localStorage.getItem('moneyAppPinSalt');
+
+  // 第一次設定 PIN
+  if(!savedHash || !savedSalt){
+    if(firstPin === null){
+      firstPin = pin;
+      pinInput.value = '';
+      pinError.textContent = '請再輸入一次 PIN 確認';
+      pinError.style.display = 'block';
+      return;
+    }
+
+    if(pin !== firstPin){
+      firstPin = null;
+      pinInput.value = '';
+      pinError.textContent = '兩次 PIN 不一致，請重新設定';
+      pinError.style.display = 'block';
+      return;
+    }
+
+    const salt = makeSalt();
+    const hash = await derivePinHash(pin, salt);
+
+    localStorage.setItem('moneyAppPinSalt', salt);
+    localStorage.setItem('moneyAppPinHash', hash);
+
+    firstPin = null;
+    pinInput.value = '';
+    pinError.style.display = 'none';
+    lockScreen.style.display = 'none';
+    return;
+  }
+
+  // 已設定 PIN：驗證
+  const currentHash = await derivePinHash(pin, savedSalt);
+
+  if(currentHash === savedHash){
+    pinInput.value = '';
+    pinError.style.display = 'none';
+    lockScreen.style.display = 'none';
+  }else{
+    pinInput.value = '';
+    pinError.textContent = 'PIN 錯誤，請再試一次';
+    pinError.style.display = 'block';
+  }
+}
+
+unlockBtn.addEventListener('click', unlockVault);
+
+pinInput.addEventListener('keydown', e => {
+  if(e.key === 'Enter') unlockVault();
+});
+  renderTotalAssets();
 </script>
 </body>
 </html>
