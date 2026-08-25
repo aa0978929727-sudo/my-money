@@ -78,6 +78,7 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
     <button class="tab" data-tab="budgets">預算</button>
     <button class="tab" data-tab="recurring">固定支出</button>
     <button class="tab" data-tab="backup">備份</button>
+    <button class="tab" data-tab="security">🔐 安全</button>
   </nav>
 
   <section id="dashboard" class="panel active">
@@ -143,6 +144,69 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
       <p class="mini">資料預設只保存在這台裝置的瀏覽器中。清除瀏覽器網站資料前，記得先下載 JSON 備份。</p>
     </div>
   </section>
+  <!-- 🔐 安全設定頁面 -->
+<section id="security" class="panel">
+
+  <div class="section-title">
+    <h2>🔐 安全設定</h2>
+  </div>
+
+  <div class="card">
+    <h3>小金庫保護</h3>
+    <p class="muted">
+      使用 PIN 保護你的記帳資料，避免其他拿到這台裝置的人直接查看。
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <div class="field">
+      <label>變更 PIN</label>
+      <input
+        id="newPinInput"
+        type="password"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="輸入新的 PIN"
+      />
+    </div>
+
+    <div class="field" style="margin-top:12px;">
+      <label>再次輸入 PIN</label>
+      <input
+        id="confirmPinInput"
+        type="password"
+        inputmode="numeric"
+        maxlength="6"
+        placeholder="再次輸入新的 PIN"
+      />
+    </div>
+
+    <button
+      class="btn"
+      type="button"
+      id="changePinBtn"
+      style="margin-top:14px;"
+    >
+      儲存新 PIN 🔑
+    </button>
+
+    <p
+      id="changePinMessage"
+      class="mini"
+      style="margin-top:10px;"
+    ></p>
+  </div>
+
+  <div class="card" style="margin-top:14px;">
+    <h3>🛡️ 資料說明</h3>
+    <p class="mini">
+      記帳資料目前儲存在這台裝置的瀏覽器中。
+      建議定期到「備份」下載 JSON 備份，
+      避免清除瀏覽器資料或更換裝置後遺失。
+    </p>
+  </div>
+
+</section>
 </div>
 
 <div id="recordModal" class="modal"><div class="modal-card">
@@ -386,6 +450,37 @@ pinInput.addEventListener('keydown', e => {
   if(e.key === 'Enter') unlockVault();
 });
   renderTotalAssets();
+  // 🔐 變更 PIN
+const changePinBtn = document.getElementById('changePinBtn');
+
+if (changePinBtn) {
+  changePinBtn.addEventListener('click', async () => {
+    const newPin = document.getElementById('newPinInput').value.trim();
+    const confirmPin = document.getElementById('confirmPinInput').value.trim();
+    const message = document.getElementById('changePinMessage');
+
+    if (!/^\d{4,6}$/.test(newPin)) {
+      message.textContent = '請輸入 4～6 位數字 PIN';
+      return;
+    }
+
+    if (newPin !== confirmPin) {
+      message.textContent = '兩次輸入的 PIN 不一樣';
+      return;
+    }
+
+    const salt = makeSalt();
+const newHash = await derivePinHash(newPin, salt);
+
+localStorage.setItem('moneyAppPinSalt', salt);
+localStorage.setItem('moneyAppPinHash', newHash);
+
+    document.getElementById('newPinInput').value = '';
+    document.getElementById('confirmPinInput').value = '';
+
+    message.textContent = '✅ PIN 已更新';
+  });
+}
 </script>
 </body>
 </html>
