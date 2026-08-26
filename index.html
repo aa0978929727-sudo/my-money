@@ -157,14 +157,22 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
     <div class="form-grid">
 
       <div class="field span2">
-        <label>查看月份</label>
-        <input type="month" id="reportMonth">
-      </div>
+  <label>報表模式</label>
+  <select id="reportMode">
+    <option value="month">📅 月報</option>
+    <option value="year">📊 年報</option>
+  </select>
+</div>
 
-      <div class="field span2">
-        <label>查看年份</label>
-        <select id="reportYear"></select>
-      </div>
+<div class="field span2" id="reportMonthField">
+  <label>查看月份</label>
+  <input type="month" id="reportMonth">
+</div>
+
+<div class="field span2" id="reportYearField" style="display:none;">
+  <label>查看年份</label>
+  <select id="reportYear"></select>
+</div>
 
     </div>
 
@@ -486,6 +494,41 @@ function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId==
       : `<div class="note">這個期間還沒有記帳資料。</div>`;
   }
 }
+  function updateReportMode(){
+  const mode = $('reportMode');
+  const monthField = $('reportMonthField');
+  const yearField = $('reportYearField');
+  const monthInput = $('reportMonth');
+  const yearSelect = $('reportYear');
+
+  if(!mode || !monthField || !yearField) return;
+
+  if(mode.value === 'year'){
+    monthField.style.display = 'none';
+    yearField.style.display = 'block';
+
+    // 切到年報時，預設今年
+    if(yearSelect && !yearSelect.value){
+      yearSelect.value = String(new Date().getFullYear());
+    }
+  }else{
+    monthField.style.display = 'block';
+    yearField.style.display = 'none';
+
+    // 切回月報時，不使用年份篩選
+    if(yearSelect) yearSelect.value = '';
+
+    if(monthInput && !monthInput.value){
+      monthInput.value = monthKey();
+    }
+  }
+
+  renderReports();
+}
+
+$('reportMode')?.addEventListener('change', updateReportMode);
+$('reportMonth')?.addEventListener('change', renderReports);
+$('reportYear')?.addEventListener('change', renderReports);
 function renderAccounts(){$('accountList').innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="account"><span class="pill">${a.type}</span><strong>${escapeHtml(a.name)}</strong><div class="mini">目前餘額</div><div style="font-size:24px;font-weight:800;margin:6px 0">${money(accountBalance(a))}</div><button class="btn danger" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join(''):'<div class="empty">尚未建立帳戶</div>'}
 function openAccountModal(){$('accountForm').reset();openModal('accountModal')}$('accountForm').addEventListener('submit',e=>{e.preventDefault();data.accounts.push({id:id(),name:$('accountName').value.trim(),type:$('accountType').value,opening:Number($('accountOpening').value)||0});save();closeModal('accountModal');toast('帳戶已新增')});
 function deleteAccount(x){if(data.accounts.length<=1)return alert('至少要保留一個帳戶。');if(data.records.some(r=>r.accountId===x))return alert('這個帳戶已經有記帳紀錄，請先修改相關紀錄後再刪除。');if(confirm('刪除這個帳戶？')){data.accounts=data.accounts.filter(a=>a.id!==x);save()}}
