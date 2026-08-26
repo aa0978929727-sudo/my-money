@@ -282,7 +282,7 @@ function categoriesFor(type){return type==='income'?INCOME_CATS:EXPENSE_CATS}
 function fillCategories(selectId,type='expense',includeAll=false){const s=document.getElementById(selectId); if(!s)return; const arr=categoriesFor(type); s.innerHTML=(includeAll?'<option value="">全部分類</option>':'')+arr.map(c=>`<option value="${c}">${c}</option>`).join('')}
 function fillAccounts(selectId){const s=document.getElementById(selectId);if(!s)return;s.innerHTML=data.accounts.map(a=>`<option value="${a.id}">${a.name}</option>`).join('')}
 
-function renderAll(){renderDashboard();renderRecords();renderAccounts();renderBudgets();renderRecurring();fillAccounts('recordAccount');fillAccounts('recurringAccount');fillCategories('filterCategory','expense',true)}
+function renderAll(){renderDashboard();renderRecords();renderAccounts();renderBudgets();renderRecurring();renderTotalAssets();fillAccounts('recordAccount');fillAccounts('recurringAccount');fillCategories('filterCategory','expense',true)}
 
 function renderDashboard(){
   const mk=monthKey(); const r=data.records.filter(x=>x.date.startsWith(mk));
