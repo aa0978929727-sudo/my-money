@@ -377,6 +377,115 @@ function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId==
   const el = $('totalAssets');
   if(el) el.textContent = money(total);
 }
+  function renderReports(){
+  const records = Array.isArray(data.records) ? data.records : [];
+  const monthInput = $('reportMonth');
+  const yearSelect = $('reportYear');
+
+  if(!monthInput || !yearSelect) return;
+
+  const years = [...new Set(
+    records.filter(r => r.date).map(r => r.date.slice(0,4))
+  )].sort((a,b) => b.localeCompare(a));
+
+  const currentYear = String(new Date().getFullYear());
+
+  if(!years.includes(currentYear)){
+    years.unshift(currentYear);
+  }
+
+  if(!yearSelect.options.length){
+    yearSelect.innerHTML =
+      `<option value="">月報模式</option>` +
+      years.map(y => `<option value="${y}">${y} 年</option>`).join('');
+  }
+
+  if(!monthInput.value && !yearSelect.value){
+    monthInput.value = monthKey();
+  }
+
+  let filtered = [];
+
+  if(yearSelect.value){
+    filtered = records.filter(r =>
+      r.date && r.date.startsWith(yearSelect.value)
+    );
+  }else{
+    const month = monthInput.value || monthKey();
+
+    filtered = records.filter(r =>
+      r.date && r.date.startsWith(month)
+    );
+  }
+
+  const income = filtered
+    .filter(r => r.type === 'income')
+    .reduce((sum,r) => sum + (Number(r.amount) || 0), 0);
+
+  const expense = filtered
+    .filter(r => r.type === 'expense')
+    .reduce((sum,r) => sum + (Number(r.amount) || 0), 0);
+
+  const balance = income - expense;
+
+  const incomeEl = $('reportIncome');
+  const expenseEl = $('reportExpense');
+  const balanceEl = $('reportBalance');
+
+  if(incomeEl) incomeEl.textContent = money(income);
+  if(expenseEl) expenseEl.textContent = money(expense);
+
+  if(balanceEl){
+    balanceEl.textContent = money(balance);
+    balanceEl.className =
+      'value ' + (balance >= 0 ? 'income' : 'expense');
+  }
+
+  const categories = {};
+
+  filtered
+    .filter(r => r.type === 'expense')
+    .forEach(r => {
+      const c = r.category || '其他';
+      categories[c] =
+        (categories[c] || 0) + (Number(r.amount) || 0);
+    });
+
+  const categoryList = Object.entries(categories)
+    .sort((a,b) => b[1] - a[1]);
+
+  const categoryEl = $('reportCategories');
+
+  if(categoryEl){
+    categoryEl.innerHTML = categoryList.length
+      ? categoryList.map(([c,v]) => {
+          const pct =
+            expense > 0 ? Math.round(v / expense * 100) : 0;
+
+          return `
+            <div class="budget-item">
+              <strong>${escapeHtml(c)}</strong>
+              <div class="progress">
+                <i style="width:${pct}%"></i>
+              </div>
+              <span>${money(v)}・${pct}%</span>
+            </div>
+          `;
+        }).join('')
+      : `<div class="note">這個期間還沒有支出資料。</div>`;
+  }
+
+  const sorted = [...filtered]
+    .sort((a,b) => b.date.localeCompare(a.date));
+
+  const recordsEl = $('reportRecords');
+
+  if(recordsEl){
+    recordsEl.innerHTML = sorted.length
+      ? tableHTML(sorted, false)
+      : `<div class="note">這個期間還沒有記帳資料。</div>`;
+  }
+}
 function renderAccounts(){$('accountList').innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="account"><span class="pill">${a.type}</span><strong>${escapeHtml(a.name)}</strong><div class="mini">目前餘額</div><div style="font-size:24px;font-weight:800;margin:6px 0">${money(accountBalance(a))}</div><button class="btn danger" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join(''):'<div class="empty">尚未建立帳戶</div>'}
 function openAccountModal(){$('accountForm').reset();openModal('accountModal')}$('accountForm').addEventListener('submit',e=>{e.preventDefault();data.accounts.push({id:id(),name:$('accountName').value.trim(),type:$('accountType').value,opening:Number($('accountOpening').value)||0});save();closeModal('accountModal');toast('帳戶已新增')});
 function deleteAccount(x){if(data.accounts.length<=1)return alert('至少要保留一個帳戶。');if(data.records.some(r=>r.accountId===x))return alert('這個帳戶已經有記帳紀錄，請先修改相關紀錄後再刪除。');if(confirm('刪除這個帳戶？')){data.accounts=data.accounts.filter(a=>a.id!==x);save()}}
