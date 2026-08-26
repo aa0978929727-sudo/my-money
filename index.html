@@ -301,6 +301,43 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
     <div class="field span4"><button class="btn" type="submit">新增</button></div>
   </form>
 </div></div>
+  <div id="transferModal" class="modal"><div class="modal-card">
+  <div class="section-title">
+    <h2>🔄 帳戶轉帳</h2>
+    <button class="btn ghost" type="button" onclick="closeModal('transferModal')">關閉</button>
+  </div>
+
+  <form id="transferForm" class="form-grid">
+    <div class="field span2">
+      <label>轉出帳戶</label>
+      <select id="transferFrom" required></select>
+    </div>
+
+    <div class="field span2">
+      <label>轉入帳戶</label>
+      <select id="transferTo" required></select>
+    </div>
+
+    <div class="field span2">
+      <label>金額</label>
+      <input type="number" id="transferAmount" min="0" step="1" required>
+    </div>
+
+    <div class="field span2">
+      <label>日期</label>
+      <input type="date" id="transferDate" required>
+    </div>
+
+    <div class="field span4">
+      <label>備註</label>
+      <input id="transferNote" placeholder="例如：轉保險準備金、急用金">
+    </div>
+
+    <div class="field span4">
+      <button class="btn" type="submit">確認轉帳</button>
+    </div>
+  </form>
+</div></div>
 
 <div id="budgetModal" class="modal"><div class="modal-card">
   <div class="section-title"><h2>設定每月預算</h2><button class="btn ghost" onclick="closeModal('budgetModal')">關閉</button></div>
@@ -353,8 +390,8 @@ function fillAccounts(selectId){const s=document.getElementById(selectId);if(!s)
 function renderAll(){renderDashboard();renderRecords();renderAccounts();renderBudgets();renderRecurring();renderTotalAssets();fillAccounts('recordAccount');fillAccounts('recurringAccount');fillCategories('filterCategory','expense',true)}
 
 function renderDashboard(){
-  const mk=monthKey(); const r=data.records.filter(x=>x.date.startsWith(mk));
-  const inc=r.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0); const exp=r.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);
+  const mk=monthKey(); const r=data.records.filter(x=>x.date.startsWith(mk) && !x.transfer);
+const inc=r.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0); const exp=r.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0);
   $('kpiIncome').textContent=money(inc);$('kpiExpense').textContent=money(exp);$('kpiBalance').textContent=money(inc-exp);$('kpiBalance').className='value '+(inc-exp>=0?'income':'expense');
   const recent=[...data.records].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8); $('recentRecords').innerHTML=tableHTML(recent,false);
   const cats={};r.filter(x=>x.type==='expense').forEach(x=>cats[x.category]=(cats[x.category]||0)+x.amount);const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
@@ -363,7 +400,7 @@ function renderDashboard(){
 }
 function renderMonthChart(){
   const months=[]; const now=new Date(); for(let i=5;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push(monthKey(d))}
-  const vals=months.map(m=>{const rr=data.records.filter(x=>x.date.startsWith(m));return {m,inc:rr.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0),exp:rr.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0)}});
+  const vals=months.map(m=>{const rr=data.records.filter(x=>x.date.startsWith(m) && !x.transfer);return {m,inc:rr.filter(x=>x.type==='income').reduce((s,x)=>s+x.amount,0),exp:rr.filter(x=>x.type==='expense').reduce((s,x)=>s+x.amount,0)}});
   const max=Math.max(1,...vals.flatMap(v=>[v.inc,v.exp]));
   $('monthChart').innerHTML=vals.map(v=>`<div class="bar-wrap"><div style="display:flex;align-items:flex-end;justify-content:center;gap:3px;height:140px"><div title="收入 ${money(v.inc)}" class="bar" style="height:${v.inc/max*130}px"></div><div title="支出 ${money(v.exp)}" class="bar exp" style="height:${v.exp/max*130}px"></div></div><div>${v.m.slice(5)}月</div></div>`).join('');
 }
@@ -378,7 +415,28 @@ function openRecordModal(rec=null){$('recordForm').reset();$('recordId').value=r
 $('recordType').addEventListener('change',()=>fillCategories('recordCategory',$('recordType').value));
 $('recordForm').addEventListener('submit',e=>{e.preventDefault();const obj={id:$('recordId').value||id(),type:$('recordType').value,date:$('recordDate').value,amount:Number($('recordAmount').value),category:$('recordCategory').value,name:$('recordName').value.trim(),accountId:$('recordAccount').value,note:$('recordNote').value.trim()};const idx=data.records.findIndex(x=>x.id===obj.id);if(idx>=0)data.records[idx]=obj;else data.records.push(obj);save();closeModal('recordModal');toast('已儲存 ✨')});
 function editRecord(x){openRecordModal(data.records.find(r=>r.id===x))}function deleteRecord(x){if(confirm('確定要刪除這筆紀錄嗎？')){data.records=data.records.filter(r=>r.id!==x);save();toast('已刪除')}}
+function openTransferModal(){
+  if(!Array.isArray(data.accounts) || data.accounts.length < 2){
+    alert('至少需要 2 個帳戶才能轉帳。');
+    return;
+  }
 
+  $('transferForm').reset();
+
+  const options = data.accounts
+    .map(a => `<option value="${a.id}">${a.name}</option>`)
+    .join('');
+
+  $('transferFrom').innerHTML = options;
+  $('transferTo').innerHTML = options;
+
+  if(data.accounts.length > 1){
+    $('transferTo').selectedIndex = 1;
+  }
+
+  $('transferDate').value = today();
+  openModal('transferModal');
+}
 function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId===a.id).reduce((s,r)=>s+(r.type==='income'?r.amount:-r.amount),0)}
   function renderTotalAssets(){
   const total = data.accounts.reduce((sum, a) => sum + accountBalance(a), 0);
@@ -386,7 +444,7 @@ function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId==
   if(el) el.textContent = money(total);
 }
   function renderReports(){
-  const records = Array.isArray(data.records) ? data.records : [];
+  const records = Array.isArray(data.records) ? data.records.filter(r => !r.transfer) : [];
   const monthInput = $('reportMonth');
   const yearSelect = $('reportYear');
 
@@ -693,6 +751,67 @@ localStorage.setItem('moneyAppPinHash', newHash);
     message.textContent = '✅ PIN 已更新';
   });
 }
+  // ===== 帳戶轉帳：確認送出 =====
+$('transferForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const fromId = $('transferFrom').value;
+  const toId = $('transferTo').value;
+  const amount = Number($('transferAmount').value);
+  const date = $('transferDate').value;
+  const note = $('transferNote').value.trim();
+
+  if (!fromId || !toId) {
+    alert('請選擇轉出與轉入帳戶');
+    return;
+  }
+
+  if (fromId === toId) {
+    alert('轉出帳戶和轉入帳戶不能相同');
+    return;
+  }
+
+  if (!amount || amount <= 0) {
+    alert('請輸入正確的轉帳金額');
+    return;
+  }
+
+  const fromAccount = data.accounts.find(a => a.id === fromId);
+  const toAccount = data.accounts.find(a => a.id === toId);
+
+  if (!fromAccount || !toAccount) {
+    alert('找不到帳戶');
+    return;
+  }
+
+  data.records.push({
+    id: id(),
+    type: 'expense',
+    date: date,
+    amount: amount,
+    category: '帳戶轉帳',
+    name: `轉帳：${fromAccount.name} → ${toAccount.name}`,
+    note: note,
+    accountId: fromId,
+    transfer: true
+  });
+
+  data.records.push({
+    id: id(),
+    type: 'income',
+    date: date,
+    amount: amount,
+    category: '帳戶轉帳',
+    name: `轉帳：${fromAccount.name} → ${toAccount.name}`,
+    note: note,
+    accountId: toId,
+    transfer: true
+  });
+
+  save();
+  closeModal('transferModal');
+  toast('轉帳完成');
+});
 </script>
 </body>
 </html>
