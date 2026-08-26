@@ -145,6 +145,65 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
       <p class="mini">資料預設只保存在這台裝置的瀏覽器中。清除瀏覽器網站資料前，記得先下載 JSON 備份。</p>
     </div>
   </section>
+  <!-- 📊 歷史報表頁面 -->
+<section id="reports" class="panel">
+
+  <div class="section-title">
+    <h2>📊 歷史報表</h2>
+  </div>
+
+  <div class="card">
+
+    <div class="form-grid">
+
+      <div class="field span2">
+        <label>查看月份</label>
+        <input type="month" id="reportMonth">
+      </div>
+
+      <div class="field span2">
+        <label>查看年份</label>
+        <select id="reportYear"></select>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="grid" style="margin-top:14px">
+
+    <div class="card kpi">
+      <div class="label">本期收入</div>
+      <div class="value income" id="reportIncome">$0</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="label">本期支出</div>
+      <div class="value expense" id="reportExpense">$0</div>
+    </div>
+
+    <div class="card kpi">
+      <div class="label">本期結餘</div>
+      <div class="value" id="reportBalance">$0</div>
+    </div>
+
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="section-title">
+      <h2>支出分類</h2>
+    </div>
+    <div id="reportCategories"></div>
+  </div>
+
+  <div class="card" style="margin-top:14px">
+    <div class="section-title">
+      <h2>記帳明細</h2>
+    </div>
+    <div id="reportRecords"></div>
+  </div>
+
+</section>
   <!-- 🔐 安全設定頁面 -->
 <section id="security" class="panel">
 
