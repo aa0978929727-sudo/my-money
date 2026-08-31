@@ -759,6 +759,32 @@ function renderRecurring(){
               <div class="mini">分類</div>
               <strong>${escapeHtml(r.category || '')}</strong>
             </div>
+            <div>
+  <div class="mini">扣款帳戶</div>
+  <strong>${escapeHtml(data.accounts.find(a => a.id === r.accountId)?.name || '未設定')}</strong>
+</div>
+<div>
+  <div class="mini">帳戶目前餘額</div>
+  <strong>${money(accountBalance(data.accounts.find(a => a.id === r.accountId) || {id:'',opening:0}))}</strong>
+</div>
+<div>
+  <div class="mini">本期扣款後</div>
+  <strong>${money(
+    accountBalance(data.accounts.find(a => a.id === r.accountId) || {id:'',opening:0})
+    - Number(r.amount || 0)
+  )}</strong>
+</div>
+
+<div>
+  <div class="mini">付款狀態</div>
+  <strong>
+    ${
+      accountBalance(data.accounts.find(a => a.id === r.accountId) || {id:'',opening:0}) >= Number(r.amount || 0)
+        ? '✅ 足夠支付'
+        : '⚠️ 餘額不足'
+    }
+  </strong>
+</div>
           </div>
 
           <div style="
