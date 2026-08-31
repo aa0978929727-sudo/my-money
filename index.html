@@ -707,65 +707,83 @@ function renderRecurring(){
   }
 
   el.innerHTML = `
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>名稱</th>
-            <th>金額</th>
-            <th>週期</th>
-            <th>下次繳費</th>
-            <th>每月預留</th>
-            <th>分類</th>
-            <th>操作</th>
-          </tr>
-        </thead>
+    <div style="display:grid;gap:14px;">
+      ${data.recurring.map(r => `
+        <div style="
+          background:#fff;
+          border:1px solid #dbeaf7;
+          border-radius:20px;
+          padding:18px;
+          box-shadow:0 2px 8px rgba(0,0,0,.03);
+        ">
 
-        <tbody>
-          ${data.recurring.map(r => `
-            <tr>
-              <td>
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+            <div>
+              <div style="font-size:20px;font-weight:800;">
                 ${escapeHtml(r.name)}
-                ${r.note ? `<div class="mini">${escapeHtml(r.note)}</div>` : ''}
-              </td>
+              </div>
+              ${r.note ? `
+                <div class="mini" style="margin-top:4px;">
+                  ${escapeHtml(r.note)}
+                </div>
+              ` : ''}
+            </div>
 
-              <td>${money(r.amount)}</td>
+            <div style="font-size:20px;font-weight:800;white-space:nowrap;">
+              ${money(r.amount)}
+            </div>
+          </div>
 
-              <td>
-                ${recurringFrequencyText(r.frequency)}
-              </td>
+          <div style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:12px;
+            margin-top:18px;
+          ">
+            <div>
+              <div class="mini">繳費週期</div>
+              <strong>${recurringFrequencyText(r.frequency)}</strong>
+            </div>
 
-              <td>
-                ${r.nextDate || '-'}
-              </td>
+            <div>
+              <div class="mini">下次繳費</div>
+              <strong>${r.nextDate || '—'}</strong>
+            </div>
 
-              <td>
-                <strong>${money(Math.round(recurringMonthlyAmount(r)))}</strong>
-              </td>
+            <div>
+              <div class="mini">每月預留</div>
+              <strong>${money(Math.round(recurringMonthlyAmount(r)))}</strong>
+            </div>
 
-              <td>
-                ${escapeHtml(r.category || '')}
-              </td>
+            <div>
+              <div class="mini">分類</div>
+              <strong>${escapeHtml(r.category || '')}</strong>
+            </div>
+          </div>
 
-              <td>
-                <button
-                  class="btn secondary"
-                  onclick="postRecurring('${r.id}')"
-                >
-                  本期入帳
-                </button>
+          <div style="
+            display:grid;
+            grid-template-columns:1fr 1fr;
+            gap:10px;
+            margin-top:18px;
+          ">
+            <button
+              class="btn secondary"
+              onclick="postRecurring('${r.id}')"
+            >
+              本期入帳
+            </button>
 
-                <button
-                  class="btn danger"
-                  onclick="removeRecurring('${r.id}')"
-                >
-                  刪除
-                </button>
-              </td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
+            <button
+              class="btn danger"
+              onclick="removeRecurring('${r.id}')"
+            >
+              刪除
+            </button>
+          </div>
+
+        </div>
+      `).join('')}
     </div>
   `;
 }
