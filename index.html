@@ -803,12 +803,10 @@ function postRecurring(x){
     a.date === date
   );
 
-  if(
-    dup &&
-    !confirm('這一期固定支出看起來已經入帳，仍要再新增一次嗎？')
-  ){
-    return;
-  }
+  if(dup){
+  alert('這一期固定支出已經入帳囉，不可以重複入帳！');
+  return;
+}
 
   data.records.push({
     id: id(),
