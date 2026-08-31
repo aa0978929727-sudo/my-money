@@ -353,7 +353,11 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
   <form id="recurringForm" class="form-grid">
     <div class="field span2"><label>名稱</label><input id="recurringName" required placeholder="例如 學貸" /></div>
     <div class="field"><label>金額</label><input type="number" id="recurringAmount" min="0" required /></div>
-    <div class="field"><label>每月日期</label><input type="number" id="recurringDay" min="1" max="31" value="1" required /></div>
+    <div class="field"><label>繳費週期</label><select id="recurringFrequency" required><option value="monthly">每月</option><option value="quarterly">每季</option><option value="halfyear">每半年</option><option value="yearly">每年</option></select></div>
+
+<div class="field span2"><label>下次繳費日期</label><input type="date" id="recurringNextDate" required></div>
+
+<div class="field span2"><label>備註</label><input id="recurringNote" placeholder="例如：手機費、保險、學貸"></div>
     <div class="field span2"><label>分類</label><select id="recurringCategory"></select></div>
     <div class="field span2"><label>帳戶</label><select id="recurringAccount"></select></div>
     <div class="field span4"><button class="btn" type="submit">新增</button></div>
@@ -595,11 +599,235 @@ function openBudgetModal(){fillCategories('budgetCategory','expense');$('budgetF
 function renderBudgets(){const m=monthKey();const entries=Object.entries(data.budgets);$('budgetList').innerHTML=entries.length?entries.map(([c,b])=>{const spent=data.records.filter(r=>r.type==='expense'&&r.category===c&&r.date.startsWith(m)).reduce((s,r)=>s+r.amount,0);const pct=b?spent/b*100:0;return `<div class="budget-item"><strong>${c}</strong><div><div class="progress"><i style="width:${Math.min(100,pct)}%"></i></div><div class="mini">已用 ${pct.toFixed(0)}%</div></div><span>${money(spent)} / ${money(b)} <button class="btn danger" onclick="removeBudget('${c}')">刪除</button></span></div>`}).join(''):'<div class="empty">還沒有設定預算。</div>'}
 function removeBudget(c){delete data.budgets[c];save()}
 
-function openRecurringModal(){$('recurringForm').reset();fillCategories('recurringCategory','expense');fillAccounts('recurringAccount');openModal('recurringModal')}$('recurringForm').addEventListener('submit',e=>{e.preventDefault();data.recurring.push({id:id(),name:$('recurringName').value.trim(),amount:Number($('recurringAmount').value),day:Number($('recurringDay').value),category:$('recurringCategory').value,accountId:$('recurringAccount').value});save();closeModal('recurringModal');toast('固定支出已新增')});
-function renderRecurring(){$('recurringList').innerHTML=data.recurring.length?`<div class="table-wrap"><table><thead><tr><th>名稱</th><th>金額</th><th>每月</th><th>分類</th><th>操作</th></tr></thead><tbody>${data.recurring.map(r=>`<tr><td>${escapeHtml(r.name)}</td><td>${money(r.amount)}</td><td>${r.day} 日</td><td>${r.category}</td><td><button class="btn secondary" onclick="postRecurring('${r.id}')">本月入帳</button> <button class="btn danger" onclick="removeRecurring('${r.id}')">刪除</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">目前沒有固定支出。</div>'}
-function postRecurring(x){const r=data.recurring.find(a=>a.id===x);const now=new Date();const d=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(Math.min(r.day,new Date(now.getFullYear(),now.getMonth()+1,0).getDate())).padStart(2,'0')}`;const dup=data.records.some(a=>a.recurringId===x&&a.date.startsWith(monthKey()));if(dup&&!confirm('這個固定支出本月看起來已入帳，仍要再新增一次嗎？'))return;data.records.push({id:id(),type:'expense',date:d,amount:r.amount,category:r.category,name:r.name,accountId:r.accountId,note:'固定支出',recurringId:x});save();toast('已加入本月支出')}
-function removeRecurring(x){data.recurring=data.recurring.filter(r=>r.id!==x);save()}
+function recurringMonthlyAmount(r){
+  const amount = Number(r.amount) || 0;
+  switch(r.frequency){
+    case 'quarterly': return amount / 3;
+    case 'halfyear': return amount / 6;
+    case 'yearly': return amount / 12;
+    default: return amount;
+  }
+}
 
+function recurringFrequencyText(f){
+  switch(f){
+    case 'quarterly': return '每季';
+    case 'halfyear': return '每半年';
+    case 'yearly': return '每年';
+    default: return '每月';
+  }
+}
+
+function addMonthsToDate(dateStr, months){
+  const d = new Date(dateStr + 'T12:00:00');
+  const originalDay = d.getDate();
+
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+
+  const lastDay = new Date(
+    d.getFullYear(),
+    d.getMonth() + 1,
+    0
+  ).getDate();
+
+  d.setDate(Math.min(originalDay, lastDay));
+
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function openRecurringModal(){
+  $('recurringForm').reset();
+
+  fillCategories('recurringCategory','expense');
+  fillAccounts('recurringAccount');
+
+  const todayStr = today();
+
+  if($('recurringFrequency')){
+    $('recurringFrequency').value = 'monthly';
+  }
+
+  if($('recurringNextDate')){
+    $('recurringNextDate').value = todayStr;
+  }
+
+  openModal('recurringModal');
+}
+
+$('recurringForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const name = $('recurringName').value.trim();
+  const amount = Number($('recurringAmount').value);
+  const frequency = $('recurringFrequency').value;
+  const nextDate = $('recurringNextDate').value;
+  const note = $('recurringNote') ? $('recurringNote').value.trim() : '';
+  const category = $('recurringCategory').value;
+  const accountId = $('recurringAccount').value;
+
+  if(!name){
+    alert('請輸入固定支出名稱');
+    return;
+  }
+
+  if(!amount || amount <= 0){
+    alert('請輸入正確金額');
+    return;
+  }
+
+  if(!nextDate){
+    alert('請選擇下次繳費日期');
+    return;
+  }
+
+  data.recurring.push({
+    id: id(),
+    name,
+    amount,
+    frequency,
+    nextDate,
+    note,
+    category,
+    accountId
+  });
+
+  save();
+  closeModal('recurringModal');
+  toast('固定支出已新增');
+});
+
+function renderRecurring(){
+  const el = $('recurringList');
+  if(!el) return;
+
+  if(!Array.isArray(data.recurring) || !data.recurring.length){
+    el.innerHTML = '<div class="empty">目前沒有固定支出。</div>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>名稱</th>
+            <th>金額</th>
+            <th>週期</th>
+            <th>下次繳費</th>
+            <th>每月預留</th>
+            <th>分類</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${data.recurring.map(r => `
+            <tr>
+              <td>
+                ${escapeHtml(r.name)}
+                ${r.note ? `<div class="mini">${escapeHtml(r.note)}</div>` : ''}
+              </td>
+
+              <td>${money(r.amount)}</td>
+
+              <td>
+                ${recurringFrequencyText(r.frequency)}
+              </td>
+
+              <td>
+                ${r.nextDate || '-'}
+              </td>
+
+              <td>
+                <strong>${money(Math.round(recurringMonthlyAmount(r)))}</strong>
+              </td>
+
+              <td>
+                ${escapeHtml(r.category || '')}
+              </td>
+
+              <td>
+                <button
+                  class="btn secondary"
+                  onclick="postRecurring('${r.id}')"
+                >
+                  本期入帳
+                </button>
+
+                <button
+                  class="btn danger"
+                  onclick="removeRecurring('${r.id}')"
+                >
+                  刪除
+                </button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function postRecurring(x){
+  const r = data.recurring.find(a => a.id === x);
+
+  if(!r){
+    alert('找不到這筆固定支出');
+    return;
+  }
+
+  const date = r.nextDate || today();
+
+  const dup = data.records.some(a =>
+    a.recurringId === x &&
+    a.date === date
+  );
+
+  if(
+    dup &&
+    !confirm('這一期固定支出看起來已經入帳，仍要再新增一次嗎？')
+  ){
+    return;
+  }
+
+  data.records.push({
+    id: id(),
+    type: 'expense',
+    date,
+    amount: Number(r.amount),
+    category: r.category,
+    name: r.name,
+    accountId: r.accountId,
+    note: r.note ? `固定支出｜${r.note}` : '固定支出',
+    recurringId: x
+  });
+
+  let addMonths = 1;
+
+  if(r.frequency === 'quarterly'){
+    addMonths = 3;
+  }else if(r.frequency === 'halfyear'){
+    addMonths = 6;
+  }else if(r.frequency === 'yearly'){
+    addMonths = 12;
+  }
+
+  r.nextDate = addMonthsToDate(date, addMonths);
+
+  save();
+
+  toast(`已入帳，下次繳費 ${r.nextDate}`);
+}
+
+function removeRecurring(x){
+  if(!confirm('確定要刪除這筆固定支出嗎？')) return;
+
+  data.recurring = data.recurring.filter(r => r.id !== x);
+
+  save();
+}
 function exportJSON(){download(`我的小金庫_備份_${today()}.json`,JSON.stringify(data,null,2),'application/json')}
 function exportCSV(){const head=['日期','類型','名稱','分類','帳戶','金額','備註'];const rows=data.records.map(r=>[r.date,r.type==='income'?'收入':'支出',r.name,r.category,data.accounts.find(a=>a.id===r.accountId)?.name||'',r.amount,r.note||'']);const csv='\uFEFF'+[head,...rows].map(row=>row.map(v=>'"'+String(v).replaceAll('"','""')+'"').join(',')).join('\n');download(`我的小金庫_交易_${today()}.csv`,csv,'text/csv;charset=utf-8')}
 function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
