@@ -591,10 +591,138 @@ function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId==
 $('reportMode')?.addEventListener('change', updateReportMode);
 $('reportMonth')?.addEventListener('change', renderReports);
 $('reportYear')?.addEventListener('change', renderReports);
-function renderAccounts(){$('accountList').innerHTML=data.accounts.length?data.accounts.map(a=>`<div class="account"><span class="pill">${a.type}</span><strong>${escapeHtml(a.name)}</strong><div class="mini">目前餘額</div><div style="font-size:24px;font-weight:800;margin:6px 0">${money(accountBalance(a))}</div><button class="btn danger" onclick="deleteAccount('${a.id}')">刪除</button></div>`).join(''):'<div class="empty">尚未建立帳戶</div>'}
-function openAccountModal(){$('accountForm').reset();openModal('accountModal')}$('accountForm').addEventListener('submit',e=>{e.preventDefault();data.accounts.push({id:id(),name:$('accountName').value.trim(),type:$('accountType').value,opening:Number($('accountOpening').value)||0});save();closeModal('accountModal');toast('帳戶已新增')});
-function deleteAccount(x){if(data.accounts.length<=1)return alert('至少要保留一個帳戶。');if(data.records.some(r=>r.accountId===x))return alert('這個帳戶已經有記帳紀錄，請先修改相關紀錄後再刪除。');if(confirm('刪除這個帳戶？')){data.accounts=data.accounts.filter(a=>a.id!==x);save()}}
+let editingAccountId = null;
 
+function renderAccounts(){
+  const el = $('accountList');
+
+  el.innerHTML = data.accounts.length
+    ? data.accounts.map(a => `
+      <div class="account">
+        <span class="pill">${escapeHtml(a.type)}</span>
+
+        <strong>${escapeHtml(a.name)}</strong>
+
+        <div class="mini">目前餘額</div>
+
+        <div style="font-size:24px;font-weight:800;margin:6px 0;">
+          ${money(accountBalance(a))}
+        </div>
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:10px;
+          margin-top:14px;
+        ">
+          <button
+            class="btn secondary"
+            onclick="openAccountModal('${a.id}')"
+          >
+            ✏️ 編輯
+          </button>
+
+          <button
+            class="btn danger"
+            onclick="deleteAccount('${a.id}')"
+          >
+            刪除
+          </button>
+        </div>
+      </div>
+    `).join('')
+    : '<div class="empty">尚未建立帳戶</div>';
+}
+
+function openAccountModal(x = null){
+  editingAccountId = x;
+
+  $('accountForm').reset();
+
+  if(x){
+    const a = data.accounts.find(a => a.id === x);
+
+    if(!a){
+      alert('找不到這個帳戶');
+      return;
+    }
+
+    $('accountName').value = a.name || '';
+    $('accountType').value = a.type || '';
+    $('accountOpening').value = Number(a.opening) || 0;
+  }
+
+  openModal('accountModal');
+}
+
+$('accountForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const name = $('accountName').value.trim();
+  const type = $('accountType').value;
+  const opening = Number($('accountOpening').value) || 0;
+
+  if(!name){
+    alert('請輸入帳戶名稱');
+    return;
+  }
+
+  if(editingAccountId){
+    const a = data.accounts.find(a => a.id === editingAccountId);
+
+    if(!a){
+      alert('找不到這個帳戶');
+      return;
+    }
+
+    a.name = name;
+    a.type = type;
+    a.opening = opening;
+
+    save();
+    closeModal('accountModal');
+    toast('帳戶已更新');
+  }else{
+    data.accounts.push({
+      id: id(),
+      name,
+      type,
+      opening
+    });
+
+    save();
+    closeModal('accountModal');
+    toast('帳戶已新增');
+  }
+
+  editingAccountId = null;
+});
+
+function deleteAccount(x){
+  if(data.accounts.length <= 1){
+    alert('至少要保留一個帳戶。');
+    return;
+  }
+
+  const account = data.accounts.find(a => a.id === x);
+
+  if(!account){
+    alert('找不到這個帳戶');
+    return;
+  }
+
+  if(data.records.some(r => r.accountId === x)){
+    alert(`「${account.name}」已經有記帳紀錄，請先修改相關紀錄後再刪除。`);
+    return;
+  }
+
+  if(!confirm(`確定要刪除「${account.name}」嗎？`)){
+    return;
+  }
+
+  data.accounts = data.accounts.filter(a => a.id !== x);
+  save();
+}
 function openBudgetModal(){fillCategories('budgetCategory','expense');$('budgetForm').reset();openModal('budgetModal')}$('budgetForm').addEventListener('submit',e=>{e.preventDefault();data.budgets[$('budgetCategory').value]=Number($('budgetAmount').value)||0;save();closeModal('budgetModal');toast('預算已更新')});
 function renderBudgets(){const m=monthKey();const entries=Object.entries(data.budgets);$('budgetList').innerHTML=entries.length?entries.map(([c,b])=>{const spent=data.records.filter(r=>r.type==='expense'&&r.category===c&&r.date.startsWith(m)).reduce((s,r)=>s+r.amount,0);const pct=b?spent/b*100:0;return `<div class="budget-item"><strong>${c}</strong><div><div class="progress"><i style="width:${Math.min(100,pct)}%"></i></div><div class="mini">已用 ${pct.toFixed(0)}%</div></div><span>${money(spent)} / ${money(b)} <button class="btn danger" onclick="removeBudget('${c}')">刪除</button></span></div>`}).join(''):'<div class="empty">還沒有設定預算。</div>'}
 function removeBudget(c){delete data.budgets[c];save()}
