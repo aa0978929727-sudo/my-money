@@ -705,9 +705,75 @@ function renderRecurring(){
     el.innerHTML = '<div class="empty">目前沒有固定支出。</div>';
     return;
   }
+const insuranceItems = data.recurring.filter(r => r.category === '保險');
 
+const insuranceYearTotal = insuranceItems.reduce((sum, r) => {
+  return sum + recurringMonthlyAmount(r) * 12;
+}, 0);
+
+const insuranceAccountIds = [...new Set(
+  insuranceItems.map(r => r.accountId).filter(Boolean)
+)];
+
+const insuranceSaved = insuranceAccountIds.reduce((sum, accountId) => {
+  const account = data.accounts.find(a => a.id === accountId);
+  return sum + (account ? accountBalance(account) : 0);
+}, 0);
+
+const insuranceRemaining = Math.max(0, insuranceYearTotal - insuranceSaved);
+
+const insuranceProgress = insuranceYearTotal > 0
+  ? Math.min(100, (insuranceSaved / insuranceYearTotal) * 100)
+  : 0;
   el.innerHTML = `
     <div style="display:grid;gap:14px;">
+    <div style="
+  background:linear-gradient(135deg,#f4faff,#eaf5ff);
+  border:1px solid #cfe6fa;
+  border-radius:20px;
+  padding:20px;
+">
+  <div style="font-size:20px;font-weight:800;margin-bottom:16px;">
+    🛡️ 年度保險準備
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div>
+      <div class="mini">一年保險費</div>
+      <strong>${money(Math.round(insuranceYearTotal))}</strong>
+    </div>
+
+    <div>
+      <div class="mini">目前已準備</div>
+      <strong>${money(Math.round(insuranceSaved))}</strong>
+    </div>
+
+    <div>
+      <div class="mini">還差多少</div>
+      <strong>${money(Math.round(insuranceRemaining))}</strong>
+    </div>
+
+    <div>
+      <div class="mini">準備進度</div>
+      <strong>${insuranceProgress.toFixed(1)}%</strong>
+    </div>
+  </div>
+
+  <div style="
+    height:14px;
+    background:#dcecf8;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:18px;
+  ">
+    <div style="
+      height:100%;
+      width:${insuranceProgress}%;
+      background:#55aaf0;
+      border-radius:999px;
+    "></div>
+  </div>
+</div>
       ${data.recurring.map(r => `
         <div style="
           background:#fff;
