@@ -721,7 +721,11 @@ const insuranceSaved = insuranceAccountIds.reduce((sum, accountId) => {
 }, 0);
 
 const insuranceRemaining = Math.max(0, insuranceYearTotal - insuranceSaved);
+const currentMonth = new Date().getMonth() + 1;
+const monthsLeft = Math.max(1, 12 - currentMonth + 1);
 
+const insuranceMonthlyNeed =
+  insuranceRemaining / monthsLeft;
 const insuranceProgress = insuranceYearTotal > 0
   ? Math.min(100, (insuranceSaved / insuranceYearTotal) * 100)
   : 0;
@@ -757,6 +761,13 @@ const insuranceProgress = insuranceYearTotal > 0
       <div class="mini">準備進度</div>
       <strong>${insuranceProgress.toFixed(1)}%</strong>
     </div>
+    <div style="grid-column:1 / -1;">
+  <div class="mini">💰 每月建議存入</div>
+  <strong>${money(Math.ceil(insuranceMonthlyNeed))}</strong>
+  <div class="mini" style="margin-top:4px;">
+    依今年剩餘 ${monthsLeft} 個月平均計算
+  </div>
+</div>
   </div>
 
   <div style="
