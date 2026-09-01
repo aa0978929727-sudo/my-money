@@ -764,20 +764,45 @@ function addMonthsToDate(dateStr, months){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-function openRecurringModal(){
+let editingRecurringId = null;
+
+function openRecurringModal(x = null){
+  editingRecurringId = x;
+
   $('recurringForm').reset();
 
   fillCategories('recurringCategory','expense');
   fillAccounts('recurringAccount');
 
-  const todayStr = today();
+  if(x){
+    const r = data.recurring.find(r => r.id === x);
 
-  if($('recurringFrequency')){
-    $('recurringFrequency').value = 'monthly';
-  }
+    if(!r){
+      alert('找不到這筆固定支出');
+      return;
+    }
 
-  if($('recurringNextDate')){
-    $('recurringNextDate').value = todayStr;
+    $('recurringName').value = r.name || '';
+    $('recurringAmount').value = Number(r.amount) || 0;
+    $('recurringFrequency').value = r.frequency || 'monthly';
+    $('recurringNextDate').value = r.nextDate || today();
+
+    if($('recurringNote')){
+      $('recurringNote').value = r.note || '';
+    }
+
+    $('recurringCategory').value = r.category || '';
+    $('recurringAccount').value = r.accountId || '';
+
+  }else{
+
+    if($('recurringFrequency')){
+      $('recurringFrequency').value = 'monthly';
+    }
+
+    if($('recurringNextDate')){
+      $('recurringNextDate').value = today();
+    }
   }
 
   openModal('recurringModal');
@@ -809,20 +834,46 @@ $('recurringForm').addEventListener('submit', e => {
     return;
   }
 
-  data.recurring.push({
-    id: id(),
-    name,
-    amount,
-    frequency,
-    nextDate,
-    note,
-    category,
-    accountId
-  });
+  if(editingRecurringId){
 
-  save();
-  closeModal('recurringModal');
-  toast('固定支出已新增');
+    const r = data.recurring.find(r => r.id === editingRecurringId);
+
+    if(!r){
+      alert('找不到這筆固定支出');
+      return;
+    }
+
+    r.name = name;
+    r.amount = amount;
+    r.frequency = frequency;
+    r.nextDate = nextDate;
+    r.note = note;
+    r.category = category;
+    r.accountId = accountId;
+
+    save();
+    closeModal('recurringModal');
+    toast('固定支出已更新');
+
+  }else{
+
+    data.recurring.push({
+      id: id(),
+      name,
+      amount,
+      frequency,
+      nextDate,
+      note,
+      category,
+      accountId
+    });
+
+    save();
+    closeModal('recurringModal');
+    toast('固定支出已新增');
+  }
+
+  editingRecurringId = null;
 });
 
 function renderRecurring(){
@@ -994,10 +1045,16 @@ const insuranceProgress = insuranceYearTotal > 0
 
           <div style="
             display:grid;
-            grid-template-columns:1fr 1fr;
+            grid-template-columns:1fr 1fr 1fr;
             gap:10px;
             margin-top:18px;
           ">
+          <button
+  class="btn secondary"
+  onclick="openRecurringModal('${r.id}')"
+>
+  ✏️ 編輯
+</button>
             <button
               class="btn secondary"
               onclick="postRecurring('${r.id}')"
