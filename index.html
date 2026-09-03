@@ -772,10 +772,47 @@ $('budgetForm').addEventListener('submit', e => {
 
   editingBudgetCategory = null;
 });
+function getBudgetOrder(){
+  if(!Array.isArray(data.budgetOrder)){
+    data.budgetOrder = [];
+  }
 
+  const categories = Object.keys(data.budgets);
+
+  data.budgetOrder = data.budgetOrder.filter(c =>
+    categories.includes(c)
+  );
+
+  categories.forEach(c => {
+    if(!data.budgetOrder.includes(c)){
+      data.budgetOrder.push(c);
+    }
+  });
+
+  return data.budgetOrder;
+}
+  function moveBudget(c, direction){
+  const order = getBudgetOrder();
+  const index = order.indexOf(c);
+
+  if(index === -1) return;
+
+  const newIndex = index + direction;
+
+  if(newIndex < 0 || newIndex >= order.length){
+    return;
+  }
+
+  [order[index], order[newIndex]] =
+    [order[newIndex], order[index]];
+
+  data.budgetOrder = order;
+
+  save();
+}
 function renderBudgets(){
   const m = monthKey();
-  const entries = Object.entries(data.budgets);
+  const entries = getBudgetOrder().map(c => [c, data.budgets[c]]);
 
   $('budgetList').innerHTML = entries.length
     ? entries.map(([c,b]) => {
@@ -820,20 +857,33 @@ function renderBudgets(){
                   ${money(spent)} / ${money(b)}
                 </div>
 
-                <button
-                  class="btn secondary"
-                  onclick="openBudgetModal('${c}')"
-                >
-                  ✏️ 編輯
-                </button>
+               <button
+  class="btn secondary"
+  onclick="moveBudget('${c}', -1)"
+>
+  ⬆️ 上移
+</button>
 
-                <button
-                  class="btn danger"
-                  onclick="removeBudget('${c}')"
-                >
-                  刪除
-                </button>
+<button
+  class="btn secondary"
+  onclick="moveBudget('${c}', 1)"
+>
+  ⬇️ 下移
+</button>
 
+<button
+  class="btn secondary"
+  onclick="openBudgetModal('${c}')"
+>
+  ✏️ 編輯
+</button>
+
+<button
+  class="btn danger"
+  onclick="removeBudget('${c}')"
+>
+  刪除
+</button>
               </div>
 
             </div>
