@@ -723,9 +723,136 @@ function deleteAccount(x){
   data.accounts = data.accounts.filter(a => a.id !== x);
   save();
 }
-function openBudgetModal(){fillCategories('budgetCategory','expense');$('budgetForm').reset();openModal('budgetModal')}$('budgetForm').addEventListener('submit',e=>{e.preventDefault();data.budgets[$('budgetCategory').value]=Number($('budgetAmount').value)||0;save();closeModal('budgetModal');toast('預算已更新')});
-function renderBudgets(){const m=monthKey();const entries=Object.entries(data.budgets);$('budgetList').innerHTML=entries.length?entries.map(([c,b])=>{const spent=data.records.filter(r=>r.type==='expense'&&r.category===c&&r.date.startsWith(m)).reduce((s,r)=>s+r.amount,0);const pct=b?spent/b*100:0;return `<div class="budget-item"><strong>${c}</strong><div><div class="progress"><i style="width:${Math.min(100,pct)}%"></i></div><div class="mini">已用 ${pct.toFixed(0)}%</div></div><span>${money(spent)} / ${money(b)} <button class="btn danger" onclick="removeBudget('${c}')">刪除</button></span></div>`}).join(''):'<div class="empty">還沒有設定預算。</div>'}
-function removeBudget(c){delete data.budgets[c];save()}
+let editingBudgetCategory = null;
+
+function openBudgetModal(c = null){
+  editingBudgetCategory = c;
+
+  fillCategories('budgetCategory','expense');
+  $('budgetForm').reset();
+
+  if(c){
+    $('budgetCategory').value = c;
+    $('budgetAmount').value = Number(data.budgets[c]) || 0;
+  }
+
+  openModal('budgetModal');
+}
+
+$('budgetForm').addEventListener('submit', e => {
+  e.preventDefault();
+
+  const category = $('budgetCategory').value;
+  const amount = Number($('budgetAmount').value) || 0;
+
+  if(!category){
+    alert('請選擇預算分類');
+    return;
+  }
+
+  if(amount <= 0){
+    alert('請輸入正確預算金額');
+    return;
+  }
+
+  if(editingBudgetCategory && editingBudgetCategory !== category){
+    delete data.budgets[editingBudgetCategory];
+  }
+
+  data.budgets[category] = amount;
+
+  save();
+  closeModal('budgetModal');
+
+  toast(
+    editingBudgetCategory
+      ? '預算已更新'
+      : '預算已新增'
+  );
+
+  editingBudgetCategory = null;
+});
+
+function renderBudgets(){
+  const m = monthKey();
+  const entries = Object.entries(data.budgets);
+
+  $('budgetList').innerHTML = entries.length
+    ? entries.map(([c,b]) => {
+
+        const spent = data.records
+          .filter(r =>
+            r.type === 'expense' &&
+            r.category === c &&
+            r.date.startsWith(m)
+          )
+          .reduce((s,r) => s + r.amount, 0);
+
+        const pct = b ? spent / b * 100 : 0;
+
+        return `
+          <div class="budget-item">
+
+            <strong>${escapeHtml(c)}</strong>
+
+            <div>
+
+              <div class="progress">
+                <i style="width:${Math.min(100,pct)}%"></i>
+              </div>
+
+              <div class="mini">
+                已用 ${Math.round(pct)}%
+              </div>
+
+              <div style="
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:10px;
+                align-items:center;
+                margin-top:8px;
+              ">
+
+                <div style="
+                  grid-column:1 / -1;
+                  font-weight:800;
+                ">
+                  ${money(spent)} / ${money(b)}
+                </div>
+
+                <button
+                  class="btn secondary"
+                  onclick="openBudgetModal('${c}')"
+                >
+                  ✏️ 編輯
+                </button>
+
+                <button
+                  class="btn danger"
+                  onclick="removeBudget('${c}')"
+                >
+                  刪除
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        `;
+
+      }).join('')
+    : '<div class="empty">尚未設定預算</div>';
+}
+
+function removeBudget(c){
+
+  if(!confirm(`確定要刪除「${c}」預算嗎？`)){
+    return;
+  }
+
+  delete data.budgets[c];
+  save();
+}
 
 function recurringMonthlyAmount(r){
   const amount = Number(r.amount) || 0;
