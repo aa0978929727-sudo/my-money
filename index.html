@@ -442,6 +442,23 @@ function openTransferModal(){
   openModal('transferModal');
 }
 function accountBalance(a){return a.opening+data.records.filter(r=>r.accountId===a.id).reduce((s,r)=>s+(r.type==='income'?r.amount:-r.amount),0)}
+  function isCreditCard(a){
+  return a && a.type === '信用卡';
+}
+
+function creditCardDue(a){
+  return Math.max(0, -accountBalance(a));
+}
+
+function accountBalanceLabel(a){
+  return isCreditCard(a) ? '目前待繳' : '目前餘額';
+}
+
+function accountBalanceDisplay(a){
+  return isCreditCard(a)
+    ? creditCardDue(a)
+    : accountBalance(a);
+}
   function renderTotalAssets(){
   const total = data.accounts.reduce((sum, a) => sum + accountBalance(a), 0);
   const el = $('totalAssets');
@@ -603,10 +620,10 @@ function renderAccounts(){
 
         <strong>${escapeHtml(a.name)}</strong>
 
-        <div class="mini">目前餘額</div>
+        <div class="mini">${accountBalanceLabel(a)}</div>
 
         <div style="font-size:24px;font-weight:800;margin:6px 0;">
-          ${money(accountBalance(a))}
+          ${money(accountBalanceDisplay(a))}
         </div>
 
         <div style="
