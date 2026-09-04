@@ -616,18 +616,32 @@ function renderAccounts(){
           margin-top:14px;
         ">
           <button
-            class="btn secondary"
-            onclick="openAccountModal('${a.id}')"
-          >
-            ✏️ 編輯
-          </button>
+  class="btn secondary"
+  onclick="moveAccount('${a.id}', -1)"
+>
+  ⬆️ 上移
+</button>
 
-          <button
-            class="btn danger"
-            onclick="deleteAccount('${a.id}')"
-          >
-            刪除
-          </button>
+<button
+  class="btn secondary"
+  onclick="moveAccount('${a.id}', 1)"
+>
+  ⬇️ 下移
+</button>
+
+<button
+  class="btn secondary"
+  onclick="openAccountModal('${a.id}')"
+>
+  ✏️ 編輯
+</button>
+
+<button
+  class="btn danger"
+  onclick="deleteAccount('${a.id}')"
+>
+  刪除
+</button>
         </div>
       </div>
     `).join('')
@@ -697,7 +711,22 @@ $('accountForm').addEventListener('submit', e => {
 
   editingAccountId = null;
 });
+function moveAccount(id, direction){
+  const index = data.accounts.findIndex(a => a.id === id);
 
+  if(index === -1) return;
+
+  const newIndex = index + direction;
+
+  if(newIndex < 0 || newIndex >= data.accounts.length){
+    return;
+  }
+
+  [data.accounts[index], data.accounts[newIndex]] =
+    [data.accounts[newIndex], data.accounts[index]];
+
+  save();
+}
 function deleteAccount(x){
   if(data.accounts.length <= 1){
     alert('至少要保留一個帳戶。');
